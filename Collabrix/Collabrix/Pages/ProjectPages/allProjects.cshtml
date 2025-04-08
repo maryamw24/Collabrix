@@ -1,0 +1,118 @@
+﻿@page
+@model Collabrix.Pages.allProjectsModel
+@{
+    ViewData["Title"] = "Projects";
+}
+
+<div class="page-inner">
+    <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-2 mb-1">
+        <div>
+            <h3 class="fw-bold mb-1">Projects</h3>
+        </div>
+        <div class="ms-auto">
+            <a class="btn btn-primary btn-round"
+               asp-page="/ProjectPages/createProject" asp-route-UserId="1">
+                <i class="fa fa-plus me-2"></i>Create
+                Project
+            </a>
+        </div>
+    </div>
+    @if (TempData["ErrorOnServer"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error: @TempData["ErrorOnServer"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-round">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <!-- Projects table -->
+                        <table class="table align-items-center mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th scope="col">
+                                        Name
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Type
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Creater
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Projects != null && Model.Projects.Count > 0)
+                                {
+                                    @foreach (Tuple<Models.Project, string, string, bool> project in Model.Projects)
+                                    {
+                                        if (!project.Item1.IsDeleted)
+                                        {
+                                            <tr>
+                                                <th scope="row">
+                                                    <button class="btn btn-icon btn-round btn-sm me-2">
+                                                        <i class="fa-regular fa-lightbulb"></i>
+                                                    </button>
+                                                    <a href="#" class="text-decoration-none " style="color: black;">
+                                                        @project.Item1.ProjectName
+                                                    </a>
+                                                </th>
+                                                <td class="text-center">
+                                                    @(await Controllers.LookUpcontroller.getValueById(project.Item1.ProjectType))
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <div class="avatar me-2">
+                                                            <span class="avatar-title rounded-circle border border-white">@project.Item3</span>
+                                                        </div>
+                                                        <div class="username">
+                                                            @project.Item2
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">
+                                                    @if (project.Item4)
+                                                    {
+                                                        <a class="btn btn-icon btn-round btn-outline-dark btn-md"
+                                                           asp-page="/TaskPages/Kanban" asp-route-projectId="@project.Item1.ProjectId">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a class="btn btn-icon btn-round btn-outline-primary btn-md"
+                                                           asp-page="/ProjectPages/ProjectSetting" asp-route-projectId="@project.Item1.ProjectId">
+                                                            <i class="fas fa-cog"></i>
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <p>Not Allowed</p>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center">
+                                            No projects found
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

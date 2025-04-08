@@ -1,0 +1,24 @@
+﻿#kanban-board {
+    overflow-x: auto;
+    padding: 20px 0;
+}
+
+.kanban-board {
+    width: 100% !important;
+}
+
+.kanban-board-stage-1 {
+    background-color: #FFDDC1;
+}
+
+.kanban-board-stage-2 {
+    background-color: #C1E1FF;
+}
+
+.kanban-board-stage-3 {
+    background-color: #C1FFC1;
+}
+
+.kanban-board-stage-4 {
+    background-color: #F5C1FF;
+}

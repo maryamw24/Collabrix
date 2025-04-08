@@ -1,0 +1,183 @@
+﻿@page "{projectId:int}"
+@model Collabrix.Pages.TaskPages.KanbanModel
+@{
+    Layout = "_LayoutWithSidebar";
+    ViewData["Title"] = "Kanban";
+}
+<link rel="stylesheet" href="~/css/kanban.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jkanban/1.3.1/jkanban.min.css" />
+
+<div class="page-inner">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-page="/ProjectPages/allProjects">Projects</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                @(Model.Project?.ProjectName ?? "Project")
+            </li>
+        </ol>
+    </nav>
+    @if (TempData["ErrorOnServer"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error: @TempData["ErrorOnServer"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @Html.AntiForgeryToken()
+    <div id="kanban-board"></div>
+</div>
+
+<!-- Modal for task details -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="taskTitle" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="taskTitle" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="taskDescription" rows="3" readonly></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskCreatedAt" class="form-label">Created At</label>
+                        <input type="text" class="form-control" id="taskCreatedAt" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskAssignedTo" class="form-label">Assigned To</label>
+                        <input type="text" class="form-control" id="taskAssignedTo" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskStage" class="form-label">Stage</label>
+                        <input type="text" class="form-control" id="taskStage" readonly>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            let tasks = @Html.Raw(Json.Serialize(Model.Tasks));
+            let stages = @Html.Raw(Json.Serialize(Model.Stages));
+            let users = @Html.Raw(Json.Serialize(Model.Users));
+            let projectId = @Model.ProjectId;
+
+            // Create an array of boards based on stages
+            const boards = stages.map((stage, index) => ({
+                id: stage.stageId.toString(),
+                title: stage.stageName,
+                class: `kanban-column,kanban-board-stage-${index + 1}`,
+                dragTo: stages.map(s => s.stageId.toString()), // Ensure stage IDs are strings
+                item: tasks
+                    .filter(task => task.projectTaskStageId === stage.stageId && !task.isDeleted)
+                    .map(task => ({
+                        id: task.taskId.toString(),
+                        title: task.taskName,
+                        class: 'kanban-task',
+                        drag: function (el, source) {
+                            console.log("START DRAG: Task ID " + el.dataset.eid);
+                        },
+                        dragend: function (el) {
+                            console.log("END DRAG: Task ID " + el.dataset.eid);
+                        },
+                        drop: function (el) {
+                            console.log("DROPPED: Task ID " + el.dataset.eid);
+                        }
+                    }))
+                    .concat(tasks.filter(task => task.projectTaskStageId === stage.stageId && !task.isDeleted).length === 0 ? [{
+                        id: 'no-tasks',
+                        title: 'No Tasks',
+                        class: 'kanban-no-tasks',
+                        drag: function () {},
+                        dragend: function (el) {},
+                        drop: function (el) {}
+                    }] : [])
+            }));
+
+            // Initialize jKanban with the array of boards
+            var kanban = new jKanban({
+                element: '#kanban-board',
+                gutter: '10px',
+                widthBoard: '300px',
+                responsivePercentage: true,
+                dragItems: true,
+                itemHandleOptions: {
+                    enabled: true,
+                },
+                click: function (el) {
+                    var taskId = el.getAttribute("data-eid");
+                    openTaskDetailsModal(taskId);
+                },
+                dropEl: function (el, target, source, sibling) {
+                    var taskId = el.getAttribute("data-eid");
+                    var newStageId = target.parentElement.getAttribute("data-id");
+                    console.log("Moved task ID:", taskId, "to stage ID:", newStageId);
+                    updateTaskStage(taskId, newStageId);
+                },
+                boards: boards  // Pass the array of boards here
+            });
+
+            $('.kanban-container').addClass('d-flex flex-md-row flex-column gap-3');
+
+            // Function to open the task details modal
+            function openTaskDetailsModal(taskId) {
+                var taskDetails = tasks.find(task => task.taskId == taskId);
+                var stageDetails = stages.find(stage => stage.stageId === taskDetails.projectTaskStageId);
+                var user = users.find(user => user.userId === taskDetails.assignedTo);
+
+                $("#taskTitle").val(taskDetails.taskName);
+                $("#taskDescription").val(taskDetails.description);
+                $("#taskCreatedAt").val(formatDate(taskDetails.createdAt));
+                $("#taskAssignedTo").val(user ? user.fullName : "Unassigned");
+                $("#taskStage").val(stageDetails.stageName);
+
+                $("#taskDetailsModal").modal('show');
+            }
+
+            // Function to update task stage via AJAX
+            function updateTaskStage(taskId, newStageId) {
+                $.ajax({
+                    type: "POST",
+                    url: `/TaskPages/Kanban/${projectId}?handler=UpdateTaskStage`,
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("XSRF-TOKEN",
+                            $('input:hidden[name="__RequestVerificationToken"]').val());
+                    },
+                    data: {
+                        taskId: taskId,
+                        newStageId: newStageId
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            tasks = response.tasks;
+                        } else {
+                            alert("Error updating task stage: " + response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert("An error occurred: " + error);
+                    }
+                });
+            }
+
+            function formatDate(dateString) {
+                const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                const date = new Date(dateString);
+                return date.toLocaleDateString(undefined, options);
+            }
+        });
+    </script>
+}
+
+

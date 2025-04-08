@@ -1,0 +1,143 @@
+﻿@page
+@model Collabrix.Pages.Account.UserSignUpModel
+@{
+    ViewData["Title"] = "Sign Up";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            @if (!ModelState.IsValid && ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="alert col-12 alert-danger alert-dismissible fade show" role="alert">
+                    @foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <p>@error.ErrorMessage</p>
+                    }
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center mb-0">Signup</h3>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center px-5">
+                    <form method="post" id="signupForm" novalidate>
+                        <input type="hidden" asp-for="User.PasswordHash" value="123" />
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" placeholder="Full Name" asp-for="User.FullName" id="fullName" required />
+                                    <label asp-for="User.FullName">Full Name</label>
+                                    <div class="invalid-feedback" id="fullNameError"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <div class="form-floating mt-2">
+                                    <input type="email"
+                                           class="form-control"
+                                           placeholder="Email"
+                                           asp-for="User.Email"
+                                           id="mail"
+                                           required>
+                                    <label asp-for="User.Email">Email</label>
+                                    <div class="invalid-feedback" id="emailError">Invalid email address.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <div class="form-floating position-relative">
+                                    <input type="password" asp-for="Password" id="passwordField" class="form-control" placeholder="********" required />
+                                    <label asp-for="Password">Password</label>
+                                    <div class="invalid-feedback" id="passwordError"></div>
+                                    <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-1 toggle-password" data-target="passwordField"><i class="fa fa-eye"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-floating position-relative">
+                                    <input type="password" asp-for="ConfirmPassword" class="form-control" id="confirmPasswordField" placeholder="********" required>
+                                    <label asp-for="ConfirmPassword">Confirm Password</label>
+                                    <div class="invalid-feedback" id="confirmPasswordError"></div>
+                                    <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y me-1 toggle-password" data-target="confirmPasswordField"><i class="fa fa-eye"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center p-0">
+                            <button type="submit" class="btn btn-primary btn-lg w-100" id="signupBtn">Sign Up</button>
+                            <span class="text-muted">Already have an account? <a asp-page="/Account/UserSignIn">Login</a></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('signupBtn').addEventListener('click', function (event) {
+            let isValid = true;
+
+            // Clear previous errors
+            const fields = ['mail', 'passwordField', 'confirmPasswordField'];
+            fields.forEach(id => {
+                document.getElementById(id).classList.remove('is-invalid');
+            });
+
+            // Validate email
+            const email = document.getElementById('mail');
+            const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            if (!emailRegex.test(email.value)) {
+                email.classList.add('is-invalid');
+                document.getElementById('emailError').innerHTML = 'Please enter a valid email address.';
+                isValid = false;
+            }
+
+            // Validate password
+            const password = document.getElementById('passwordField');
+            const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d@@$!%*?&#^_\-=+()]{6,}$/;
+            if (!passwordRegex.test(password.value)) {
+                password.classList.add('is-invalid');
+                document.getElementById('passwordError').innerHTML = 'Password must be at least 6 characters long and contain both letters and numbers.';
+                isValid = false;
+            }
+
+            // Validate confirm password
+            const confirmPassword = document.getElementById('confirmPasswordField');
+            if (confirmPassword.value !== password.value) {
+                confirmPassword.classList.add('is-invalid');
+                document.getElementById('confirmPasswordError').innerHTML = 'Passwords do not match.';
+                isValid = false;
+            }
+
+            // Prevent form submission if any validation fails
+            if (!isValid) {
+                event.preventDefault();
+                return
+            }
+        });
+
+        // Toggle password visibility
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function () {
+                const targetId = this.getAttribute('data-target');
+                const targetInput = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+                if (targetInput.type === 'password') {
+                    targetInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    targetInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+    </script>
+}

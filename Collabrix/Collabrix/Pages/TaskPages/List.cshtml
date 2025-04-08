@@ -1,0 +1,305 @@
+﻿@page "{projectId:int}"
+@model Collabrix.Pages.TaskPages.ListModel
+@{
+    Layout = "_LayoutWithSidebar";
+    ViewData["Title"] = "List View";
+}
+
+<div class="page-inner">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-page="/ProjectPages/allProjects">Projects</a>
+                <!-- Link for the project -->
+            </li>
+            <li class="breadcrumb-item active"
+                aria-current="page">
+                @Model.Project?.ProjectName
+            </li>
+        </ol>
+    </nav>
+    @if (TempData["ErrorOnServer"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error: @TempData["ErrorOnServer"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    <div class="d-flex align-items-center justify-content-between pt-2 pb-2">
+        <div>
+            <h3 class="fw-bold mb-1">List</h3>
+        </div>
+        <div class="d-flex align-items-center">
+            <!-- New Task button -->
+            <button class="btn btn-primary btn-round ms-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#taskModal"
+                    onclick="clearTaskModal()">
+                <i class="fas fa-plus"></i> New Task
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-round">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <!-- Projects table -->
+                        <table class="table align-items-center mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Name
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Description
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Stage
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Assigned To
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Created
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Updated
+                                    </th>
+                                    <th scope="col"
+                                        class="text-center">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Tasks != null && Model.Tasks.Count > 0)
+                                {
+                                    @foreach (var task in Model.Tasks)
+                                    {
+                                        if (!task.IsDeleted)
+                                        {
+                                            // Example to fetch additional data for each task
+                                            Collabrix.Models.ProjectTaskStage stage = await Collabrix.Controllers.ProjectTaskStageController.GetProjectTaskStage(task.ProjectTaskStageId);
+                                            Collabrix.Models.User user = await Collabrix.Controllers.UserController.GetUser(task.AssignedTo);
+
+                                            <tr>
+                                                <th scope="row">
+                                                    <i class="fa fa-tasks me-2"></i>@task.TaskName
+                                                </th>
+                                                <td class="text-center text-wrap">@task.Description</td>
+                                                <td class="text-center">@stage.StageName</td>
+                                                <td class="text-start">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <div class="avatar me-2">
+                                                            @* Check if user has more than one name part *@
+                                                            @{
+                                                                var initials = "";
+                                                                var nameParts = user.FullName.Split(' ');
+                                                                if (nameParts.Length >= 2)
+                                                                {
+                                                                    initials = nameParts[0][0].ToString() + nameParts[1][0].ToString();
+                                                                }
+                                                                else if (nameParts.Length == 1)
+                                                                {
+                                                                    initials = nameParts[0][0].ToString();
+                                                                }
+                                                            }
+                                                            <span class="avatar-title rounded-circle border border-white">@initials</span>
+                                                        </div>
+                                                        <div class="username">@user.FullName</div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">@task.DueDate.ToString("MMM dd, yyyy, h:mm tt")</td>
+                                                <td class="text-center">@task.CreatedAt.ToString("MMM dd, yyyy, h:mm tt")</td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-icon btn-round btn-info btn-md me-2"
+                                                            onclick="editTask(@task.TaskId, '@task.TaskName', '@task.Description', @task.ProjectTaskStageId, @task.AssignedTo, '@task.DueDate.ToString("yyyy-MM-dd")', '@task.CreatedBy', '@task.CreatedAt', '@task.UpdatedAt', '@task.IsDeleted')">
+                                                        <i class="fas fa-pen"></i>
+                                                    </button>
+                                                    <button class="btn btn-icon btn-round btn-danger btn-md"
+                                                            onclick="deleteTask('@task.TaskId', '@task.TaskName')">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center">No tasks available for this project.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal for New Task -->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="newTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newTaskModalLabel">@Model.Project.ProjectName : <span id="modalTitle"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" />
+            </div>
+            <div class="modal-body">
+                <form id="newTaskForm" asp-page-handler="CreateEditTask">
+                    <input type="hidden" id="taskId" asp-for="Task.TaskId" />
+                    <input type="hidden" id="taskCreatedBy" asp-for="Task.CreatedBy" />
+                    <input type="hidden" id="taskCreatedAt" asp-for="Task.CreatedAt" />
+                    <input type="hidden" id="taskUpdatedAt" asp-for="Task.UpdatedAt" />
+                    <input type="hidden" id="taskIsDeleted" asp-for="Task.IsDeleted" />
+                    <div class="mb-3">
+                        <label for="task" class="form-label">Task</label>
+                        <input type="text" class="form-control" id="taskName" asp-for="Task.TaskName" placeholder="Enter task" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="taskDescription" asp-for="Task.Description" rows="3" placeholder="Enter task description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskStage" class="form-label">Stage</label>
+                        <select class="form-select" id="taskStage" asp-for="Task.ProjectTaskStageId" required>
+                            <option value="">Select stage</option>
+                            @if (Model.Stages != null)
+                            {
+                                @foreach (var stage in Model.Stages)
+                                {
+                                    <option value="@stage.StageId">@stage.StageName</option>
+                                }
+                            }
+                            else
+                            {
+                                <option value="">No stages available</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignedTo" class="form-label">Assigned To</label>
+                        <select class="form-select" id="taskAssignedTo" asp-for="Task.AssignedTo" required>
+                            <option value="">Select user</option>
+                            @if (Model.Members != null)
+                            {
+                                @foreach (var member in Model.Members)
+                                {
+                                    Collabrix.Models.User user = await Collabrix.Controllers.UserController.GetUser(member.UserId);
+                                    <option value="@member.UserId">@user.FullName</option>
+                                }
+                            }
+                            else
+                            {
+                                <option value="">No members available</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dueDate" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="taskDueDate" asp-for="Task.DueDate" value="@DateTime.Now.AddDays(7).ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button"
+                                class="btn btn-secondary"
+                                data-bs-dismiss="modal">
+                            Close
+                        </button>
+                        <button type="submit"
+                                class="btn btn-primary"
+                                id="submitBtn"
+                                form="newTaskForm">
+                            Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteTaskModalLabel">Delete Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" />
+            </div>
+            <form id="deleteTaskForm" asp-page-handler="DeleteTask">
+                <input type="hidden" id="deleteTaskId" asp-for="TaskId" />
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this task?</p>
+                    <strong><span id="deleteTaskName"></span></strong>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Close
+                    </button>
+                    <button type="submit"
+                            class="btn btn-danger"
+                            id="deleteTaskButton">
+                        Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function editTask(taskId, taskName, description, stageId, assignedTo, dueDate, taskCreatedBy, taskCreatedAt, taskUpdatedAt, taskIsDeleted) {
+            $('#taskModal').modal('show');
+            $('#modalTitle').text('Edit Task');
+            $('#taskId').val(taskId);
+            $('#taskName').val(taskName);
+            $('#taskDescription').val(description);
+            $('#taskStage').val(stageId);
+            $('#taskAssignedTo').val(assignedTo);
+            $('#taskDueDate').val(dueDate);
+            $('#taskCreatedBy').val(taskCreatedBy);
+            $('#taskCreatedAt').val(taskCreatedAt);
+            $('#taskUpdatedAt').val(taskUpdatedAt);
+            $('#taskIsDeleted').val(taskIsDeleted);
+            $('#submitBtn').text('Save');
+        }
+
+        function clearTaskModal() {
+            $('#taskId').val('');
+            $('#modalTitle').text('New Task');
+            $('#taskName').val('');
+            $('#taskDescription').val('');
+            $('#taskStage').val('');
+            $('#taskAssignedTo').val('');
+            $('#taskDueDate').val('');
+            $('#taskCreatedBy').val('');
+            $('#taskCreatedAt').val('');
+            $('#taskUpdatedAt').val('');
+            $('#taskIsDeleted').val('');
+            $('#submitBtn').text('Create Task');
+        }
+
+        function deleteTask(taskId, taskName) {
+            $('#deleteTaskModal').modal('show');
+            $('#deleteTaskId').val(taskId);
+            $('#deleteTaskName').text(taskName);
+        }
+    </script>
+}

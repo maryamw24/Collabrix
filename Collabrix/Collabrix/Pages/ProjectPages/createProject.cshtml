@@ -1,0 +1,455 @@
+﻿@page
+@model Collabrix.Pages.createProjectModel
+@{
+    ViewData["Title"] = "Create Project";
+}
+
+<div class="page-inner">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-page="/ProjectPages/allProjects">Projects</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">New Project</li>
+        </ol>
+    </nav>
+
+    @if (TempData["ErrorOnServer"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error: @TempData["ErrorOnServer"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Project Creation Form -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-round">
+                <form method="post" asp-page-handler="CreateProject">
+                    <input type="hidden" id="membersInputForBackend" asp-for="MembersList" />
+                    <input type="hidden" id="stagesInputForBackend" asp-for="StagesList" />
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title">New Project</h4>
+                        <button type="submit" class="btn btn-primary float-end mb-3" onclick="submitProjectForm()">Create Project</button>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-12 form-group mb-3">
+                                <label asp-for="Project.ProjectName" class="form-label">Project Name</label>
+                                <input asp-for="Project.ProjectName" class="form-control" placeholder="Enter project name" required />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 form-group mb-3">
+                                <label asp-for="Project.Description" class="form-label">Project Description</label>
+                                <textarea asp-for="Project.Description" class="form-control" rows="4" placeholder="Enter project description" required></textarea>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-md-6 form-group mb-3">
+                                <label asp-for="Project.StartDate" class="form-label">Start Date</label>
+                                <input asp-for="Project.StartDate" type="date" class="form-control" required />
+                            </div>
+                            <div class="col-12 col-md-6 form-group mb-3">
+                                <label asp-for="Project.EndDate" class="form-label">End Date</label>
+                                <input asp-for="Project.EndDate" type="date" class="form-control" required />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 col-md-6 form-group mb-3">
+                                <label asp-for="Project.ProjectType" class="form-label">Type</label>
+                                <select asp-for="Project.ProjectType" class="form-control" required>
+                                    <option value="" disabled selected>Select Project Type</option>
+                                    @foreach (var type in Model.ProjectTypes)
+                                    {
+                                        <option value="@type.LookupId">@type.Value</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6 form-group mb-3">
+                                <label asp-for="Project.Status" class="form-label">Status</label>
+                                <select asp-for="Project.Status" class="form-control" required>
+                                    <option value="" disabled selected>Select Project Status</option>
+                                    @foreach (var status in Model.Statuses)
+                                    {
+                                        <option value="@status.LookupId">@status.Value</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Tabs for Members and Task Statuses -->
+                        <ul class="nav nav-tabs mb-3"
+                            id="myTab"
+                            role="tablist">
+                            <li class="nav-item"
+                                role="presentation">
+                                <a class="nav-link active"
+                                   id="team-tab"
+                                   data-bs-toggle="tab"
+                                   href="#team"
+                                   role="tab"
+                                   aria-controls="team"
+                                   aria-selected="true">Team Members</a>
+                            </li>
+                            <li class="nav-item"
+                                role="presentation">
+                                <a class="nav-link"
+                                   id="stages-tab"
+                                   data-bs-toggle="tab"
+                                   href="#stages"
+                                   role="tab"
+                                   aria-controls="tasks"
+                                   aria-selected="false">Stages</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="myTabContent">
+                            <!-- Team Members Tab -->
+                            <div class="tab-pane fade show active"
+                                 id="team"
+                                 role="tabpanel"
+                                 aria-labelledby="team-tab">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <button type="button"
+                                            class="btn btn-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#addMemberModal">
+                                        Add Member
+                                    </button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="teamMembersTable">
+                                            <tr>
+                                                <td colspan="4" class="text-center">No members added yet</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade"
+                                 id="stages"
+                                 role="tabpanel"
+                                 aria-labelledby="stages-tab">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <button type="button"
+                                            class="btn btn-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#addStageModal">
+                                        Add Stage
+                                    </button>
+                                </div>
+                                <!-- Table for stages -->
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>
+                                                    Stage Name
+                                                </th>
+                                                <th>
+                                                    Description
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="stagesTableBody">
+                                            <tr>
+                                                <td colspan="2" class="text-center">No stages added yet</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal for Adding Stages -->
+<div class="modal fade" id="addStageModal" tabindex="-1" aria-labelledby="addStageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"
+                    id="addStageModalLabel">
+                    Add Stage
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="stageName" asp-for="stageName"
+                           class="form-label">Stage Name</label>
+                    <input type="text" asp-for="stageName"
+                           class="form-control"
+                           id="stageName"
+                           placeholder="Enter stage name"
+                           required />
+                </div>
+                <div class="mb-3">
+                    <label for="stageDescription" asp-for="stageDescription"
+                           class="form-label">Description</label>
+                    <textarea class="form-control" asp-for="stageDescription"
+                              id="stageDescription"
+                              rows="3"
+                              placeholder="Enter stage description"
+                              required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+                <button id=""
+                        class="btn btn-primary"
+                        onclick="addStage()">
+                    Add Stage
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal for Adding Members -->
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-labelledby="addMemberModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"
+                    id="addMemberModalLabel">
+                    Add Member
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="memberId" />
+                <div class="mb-3">
+                    <label for="memberEmail" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="memberEmail" oninput="filterMembers()" placeholder="Enter member's email" required />
+                    <ul id="emailSuggestions" class="list-group position-absolute" style="display:none; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                        \
+                        <!-- Will be loaded automatically -->
+                    </ul>
+                </div>
+                <div class="mb-3">
+                    <label for="memberName" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="memberName" placeholder="Enter member's name" disabled />
+                </div>
+
+                <div class="mb-3">
+                    <label for="memberRole" class="form-label">Role</label>
+                    <select class="form-control" id="memberRole" required>
+                        <option value="" disabled selected>Select Role</option>
+                        @foreach (var role in Model.Roles)
+                        {
+                            <option value="@role.LookupId">@role.Value</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+                <button type="button" id="addMemberToListButton" class="btn btn-primary" onclick="addMemberToList()">
+                    Add Member
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Dropdown Styles */
+    #emailSuggestions {
+        width: calc(100% - 2rem); /* Match width with input, accounting for padding */
+        border: 1px solid #ced4da; /* Match input border */
+        border-radius: .375rem; /* Match input border radius */
+        background-color: #fff; /* White background for dropdown */
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* Subtle shadow */
+    }
+
+    .email-suggestion {
+        cursor: pointer;
+    }
+
+        .email-suggestion:hover {
+            background-color: #f8f9fa; /* Light gray background on hover */
+        }
+</style>
+
+@section Scripts {
+    <script>
+        var users = @Html.Raw(Json.Serialize(Model.Users));
+        var roles = @Html.Raw(Json.Serialize(Model.Roles));
+
+        var memberEmails = users.map(user => user.email);
+        var memberNames = {};
+        var memberIds = {}
+        var selectedMembersList = [];
+        let stages = [];
+
+
+        users.forEach(user => {
+            memberNames[user.email] = user.fullName;
+            memberIds[user.email] = user.userId;
+        });
+
+        function filterMembers() {
+            const searchInput = document.getElementById("memberEmail").value.toLowerCase();
+            const suggestions = document.getElementById("emailSuggestions");
+            suggestions.innerHTML = ""; // Clear previous suggestions
+
+            // Check if the search input length is at least 4 characters
+            if (searchInput.length >= 4) {
+                const filteredEmails = memberEmails.filter(email => email.toLowerCase().includes(searchInput));
+
+                if (filteredEmails.length > 0) {
+                    filteredEmails.forEach(email => {
+                        const li = document.createElement("li");
+                        li.className = "list-group-item email-suggestion";
+                        li.textContent = email;
+                        li.onclick = () => selectEmail(email);
+                        suggestions.appendChild(li);
+                    });
+                    suggestions.style.display = "block"; // Show suggestions
+                } else {
+                    suggestions.style.display = "none"; // Hide if no matches
+                }
+            } else {
+                suggestions.style.display = "none"; // Hide suggestions if input is less than 4 characters
+            }
+        }
+
+        function showSuggestions() {
+            const emailInput = document.getElementById("memberEmail").value;
+
+            if (emailInput.length >= 4) {
+                filterMembers(); // Call filter function to show relevant suggestions
+            } else {
+                document.getElementById("emailSuggestions").style.display = "none"; // Hide if input is less than 4 characters
+            }
+        }
+
+        function selectEmail(email) {
+            document.getElementById("memberEmail").value = email;
+            document.getElementById("memberId").value = memberIds[email]; // Set the ID based on selected email
+            document.getElementById("memberName").value = memberNames[email]; // Set the name based on selected email
+            document.getElementById("emailSuggestions").style.display = "none"; // Hide suggestions
+        }
+
+        function addMemberToList() {
+            const selectedMemberId = document.getElementById("memberId").value;
+            const memberRole = document.getElementById("memberRole").value;
+
+            // Check if member is already in the list
+            if (!selectedMemberId || !memberRole) {
+                alert("Please select a valid member and role");
+                return;
+            }
+
+            // Avoid duplicates
+            if (selectedMembersList.some(member => member.id === selectedMemberId)) {
+                alert("Member already added.");
+                return;
+            }
+
+            // Add member to the lists
+            selectedMembersList.push({ "id": selectedMemberId, "role": memberRole });
+
+            // Clear input fields after adding member
+            document.getElementById("memberEmail").value = "";
+            document.getElementById("memberName").value = "";
+            document.getElementById("memberRole").value = "";
+            document.getElementById("emailSuggestions").style.display = "none";
+
+            // Render the updated table
+            renderMemberTable();
+
+        }
+
+        function renderMemberTable() {
+            const tableBody = document.getElementById("teamMembersTable");
+            tableBody.innerHTML = ""; // Clear previous rows
+
+            if (selectedMembersList.length > 0) {
+                selectedMembersList.forEach((member, index) => {
+                    userIdd = member.id;
+                    userRolee = member.role;
+                    var user = users.find(u => u.userId == userIdd);
+                    var role = roles.find(r => r.lookupId == userRolee)
+
+                    const row = `<tr>
+                                            <td>${index + 1}</td>
+                                            <td>${user.fullName}</td>
+                                            <td>${user.email}</td>
+                                            <td>${role.value}</td>
+                                        </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            } else {
+                tableBody.innerHTML = `<tr>
+                                                <td colspan="4" class="text-center">No members added yet</td>
+                                            </tr>`;
+            }
+        }
+
+        function addStage() {
+            const stageName = document.getElementById("stageName").value;
+            const stageDescription = document.getElementById("stageDescription").value;
+
+            if (stageName && stageDescription) {
+                if (stages.some(stage => stage.Name === stageName)) {
+                    alert("Stage already added.");
+                    return;
+                }
+                // Add stage to array
+                stages.push({ "name": stageName, "description": stageDescription });
+
+                document.getElementById("stageName").value = "";
+                document.getElementById("stageDescription").value = "";
+
+                renderStagesTable()
+            }
+        }
+
+        function renderStagesTable() {
+            const tableBody = document.getElementById("stagesTableBody");
+            tableBody.innerHTML = "";
+            if (stages.length > 0) {
+                stages.forEach(stage => {
+                    const newRow = `<tr><td>${stage.name}</td><td>${stage.description}</td></tr>`;
+                    tableBody.innerHTML += newRow;
+                })
+            }
+        }
+
+        function submitProjectForm() {
+            // Convert members array to JSON and set to hidden field
+            membersList = JSON.stringify(selectedMembersList);
+            stagesList = JSON.stringify(stages);
+            document.getElementById("membersInputForBackend").value = JSON.stringify(selectedMembersList);
+            document.getElementById("stagesInputForBackend").value = JSON.stringify(stages);
+            console.log(membersList, stagesList);
+        }
+    </script>
+}

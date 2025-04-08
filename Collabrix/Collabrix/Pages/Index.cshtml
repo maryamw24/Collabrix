@@ -1,0 +1,193 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="page-inner">
+    @if (TempData["ErrorOnServer"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            Error: @TempData["ErrorOnServer"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-2">
+        <div>
+            <h3 class="fw-bold mb-1">Your Work</h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card card-round">
+                <div class="card-body">
+                    <div class="card-head-row card-tools-still-right">
+                        <div class="card-title">
+                            Recent Projects
+                        </div>
+                        <div class="card-tools">
+                            <div class="dropdown">
+                                <button class="btn btn-icon btn-clean me-0"
+                                        type="button"
+                                        id="dropdownMenuButton"
+                                        data-bs-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu"
+                                     aria-labelledby="dropdownMenuButton">
+                                    <a class="dropdown-item"
+                                       asp-page="/ProjectPages/allProjects">All Projects</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-list">
+                        @if (Model.Projects != null)
+                        {
+                            @foreach (Models.Project project in Model.Projects)
+                            {
+                                @if (!project.IsDeleted)
+                                {
+
+                                    <div class="item-list">
+                                        <div class="avatar">
+                                            <span class="avatar-title rounded-circle border border-white">@(Helper.helper.GetInitials(project.ProjectName))</span>
+                                        </div>
+                                        <div class="info-user ms-3">
+                                            <div class="username">
+                                                @project.ProjectName
+                                            </div>
+                                        </div>
+                                        <a class="btn btn-icon btn-link op-8 me-1" asp-page="/TaskPages/Kanban" asp-route-projectId="@project.ProjectId">
+                                            <i class="fa-solid fa-link"></i>
+                                        </a>
+                                    </div>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            <div class="item-list">No Recent Projects</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card card-round">
+                <div class="card-header">
+                    <div class="card-head-row card-tools-still-right">
+                        <div class="card-title">
+                            Assigned To Me
+                        </div>
+                        <div class="card-tools">
+                            <div class="dropdown">
+                                <button class="btn btn-icon btn-clean me-0"
+                                        type="button"
+                                        id="dropdownMenuButton"
+                                        data-bs-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu"
+                                     aria-labelledby="dropdownMenuButton">
+                                    <a class="dropdown-item"
+                                       href="#">Action</a>
+                                    <a class="dropdown-item"
+                                       href="#">Another action</a>
+                                    <a class="dropdown-item"
+                                       href="#">
+                                        Something else
+                                        here
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <!-- Projects table -->
+                        <table class="table align-items-center mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th scope="col">
+                                        Task
+                                    </th>
+                                    <th scope="col"
+                                        class="text-end">
+                                        Date & Time
+                                    </th>
+                                    <th scope="col"
+                                        class="text-end">
+                                        Category
+                                    </th>
+                                    <th scope="col"
+                                        class="text-end">
+                                        Status
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th scope="row">
+                                        <button class="btn btn-icon btn-round btn-success btn-sm me-2">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        Dummy task 1
+                                    </th>
+                                    <td class="text-end">
+                                        Mar 19, 2020, 2.45pm
+                                    </td>
+                                    <td class="text-end">
+                                        Task
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge badge-success">Completed</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        <button class="btn btn-icon btn-round btn-success btn-sm me-2">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        Dummy task 2
+                                    </th>
+                                    <td class="text-end">
+                                        Mar 19, 2020, 2.45pm
+                                    </td>
+                                    <td class="text-end">
+                                        Issue
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge badge-success">Completed</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        <button class="btn btn-icon btn-round btn-success btn-sm me-2">
+                                            <i class="fa fa-check"></i>
+                                        </button>
+                                        Dummy Task 3
+                                    </th>
+                                    <td class="text-end">
+                                        Mar 19, 2020, 2.45pm
+                                    </td>
+                                    <td class="text-end">
+                                        Feature
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge badge-success">Completed</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
